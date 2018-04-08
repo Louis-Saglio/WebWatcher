@@ -9,8 +9,11 @@ from flask import Flask, jsonify, abort, request
 # Model
 
 
-os.remove(':test:')
-db = peewee.SqliteDatabase(':test:')
+try:
+    os.remove('test')
+except FileNotFoundError:
+    pass
+db = peewee.SqliteDatabase('test')
 
 
 class WebSite(peewee.Model):
@@ -36,6 +39,9 @@ class WebSiteStatusLog(peewee.Model):
 
 
 db.create_tables([WebSite, WebSiteStatusLog])
+os.chmod('test', 777)
+
+WebSite.create(url='http://www.put.com')
 
 for _ in range(20):
     WebSiteStatusLog(
@@ -85,4 +91,4 @@ def update_website(url: str):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run('127.0.0.1', 8800)
