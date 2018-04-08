@@ -1,9 +1,10 @@
 import datetime
 import os
-import random
-import string
+import time
 
 import peewee
+import requests
+import multiprocessing
 from flask import Flask, jsonify, abort, request
 
 # Model
@@ -43,12 +44,34 @@ os.chmod('test', 777)
 
 WebSite.create(url='http://www.put.com')
 
-for _ in range(20):
-    WebSiteStatusLog(
-        web_site=WebSite.create(domain_name=''.join(random.sample(string.ascii_letters, 1))),
-        date=datetime.datetime.now(),
-        status=random.randint(200, 550)
-    ).save()
+
+# Background script
+
+def check_status():
+    # Cannot fail so it will always be active and will never die, until the server dies (feature).
+    while True:
+        time.sleep(5)
+        try:
+            for site in WebSite.select():
+                try:
+                    status = requests.get(site.url).status_code
+                except BaseException as e:
+                    print(e)
+                    continue
+                try:
+                    WebSiteStatusLog.create(
+                        web_site=site,
+                        date=datetime.datetime.now(),
+                        status=status
+                    )
+                except BaseException as e:
+                    print(e)
+        except BaseException as e:
+            print(e)
+            raise
+
+
+multiprocessing.Process(target=check_status).start()
 
 
 # Controller
