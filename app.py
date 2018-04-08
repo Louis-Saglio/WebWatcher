@@ -72,9 +72,16 @@ def add_web_site():
     return 'created', 201
 
 
-@app.route('/remove-web-site/<string:domain-name>', methods={'DELETE'})
-def remove_web_site(domain_name: str):
-    pass
+@app.route('/remove-web-site/<string:url>', methods={'GET'})
+def remove_web_site(url: str):
+    WebSite.delete_instance(WebSite.get(url == url))
+    return 'deleted', 200
+
+
+@app.route('/update-web-site/<string:url>', methods={'POST'})
+def update_website(url: str):
+    WebSite.update(url=request.form['url']).where(WebSite.url == url).execute()
+    return 'updated', 200
 
 
 if __name__ == '__main__':
