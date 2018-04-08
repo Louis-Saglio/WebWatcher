@@ -14,10 +14,10 @@ db = peewee.SqliteDatabase(':test:')
 
 
 class WebSite(peewee.Model):
-    domain_name = peewee.CharField()
+    url = peewee.CharField()
 
     def __repr__(self):
-        return str(self.domain_name)
+        return str(self.url)
 
     class Meta:
         database = db
@@ -63,12 +63,12 @@ def get_statuses(domain_name: str):
 
 @app.route('/')
 def list_web_sites():
-    return jsonify({'web_sites': [web_site.domain_name for web_site in WebSite.select()]})
+    return jsonify({'web_sites': [web_site.url for web_site in WebSite.select()]})
 
 
 @app.route('/add-web-site', methods={'POST'})
 def add_web_site():
-    WebSite(domain_name=request.form['domain_name']).save()
+    WebSite.create(url=request.form['url'])
     return 'created', 201
 
 
