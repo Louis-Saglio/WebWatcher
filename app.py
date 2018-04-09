@@ -8,7 +8,7 @@ import multiprocessing
 from flask import Flask, jsonify, abort, request
 
 # Model
-
+import security
 
 try:
     os.remove('test')
@@ -39,7 +39,15 @@ class WebSiteStatusLog(peewee.Model):
         database = db
 
 
-db.create_tables([WebSite, WebSiteStatusLog])
+class Message(peewee.Model):
+    web_site = peewee.ForeignKeyField(WebSite)
+    date = peewee.DateTimeField()
+
+    class Meta:
+        database = db
+
+
+db.create_tables([WebSite, WebSiteStatusLog, Message])
 os.chmod('test', 777)
 
 WebSite.create(url='http://www.put.com')
@@ -56,14 +64,36 @@ def check_status():
                 try:
                     status = requests.get(site.url).status_code
                 except BaseException as e:
-                    print(e)
-                    continue
+                    status = 999
                 try:
                     WebSiteStatusLog.create(
                         web_site=site,
                         date=datetime.datetime.now(),
                         status=status
                     )
+                except BaseException as e:
+                    print(e)
+                try:
+                    for web_site in WebSite.select():
+                        last_logs = WebSiteStatusLog.select().where(WebSiteStatusLog.web_site == web_site)[-3:]
+                        if len(last_logs) < 3:
+                            continue
+                        for w in last_logs:
+                            if str(w.status).startswith('2'):
+                                break
+                        else:
+                            mock_api = {
+                                'token': security.API_TOKEN,
+                                'message': web_site.url + ' is broken'
+                            }
+                            try:
+                                messages = Message.select().order_by(Message.date.desc())
+                                if not messages or (datetime.datetime.now() - messages[0].date).total_seconds() >= 36:
+                                    print(mock_api)
+                                    Message.create(web_site=web_site, date=datetime.datetime.now())
+                            except BaseException as e:
+                                print(e)
+                            # I don't want to create account on Slack and Telegram and you have no right to force me to do this
                 except BaseException as e:
                     print(e)
         except BaseException as e:
@@ -79,9 +109,9 @@ multiprocessing.Process(target=check_status).start()
 app = Flask('WebWatcher')  # config
 
 
-@app.route('/web-site/<string:domain_name>')
-def get_statuses(domain_name: str):
-    web_sites = WebSiteStatusLog.select().join(WebSite).where(WebSite.domain_name == domain_name)
+@app.route('/web-site/<int:id_>')
+def get_statuses(id_: int):
+    web_sites = WebSiteStatusLog.select().join(WebSite).where(WebSite.id == id_)
     if not web_sites:
         abort(404)
     rep = {'logs': []}
@@ -101,15 +131,15 @@ def add_web_site():
     return 'created', 201
 
 
-@app.route('/remove-web-site/<string:url>', methods={'GET'})
-def remove_web_site(url: str):
-    WebSite.delete_instance(WebSite.get(url == url))
+@app.route('/remove-web-site/<int:id_>', methods={'GET'})
+def remove_web_site(id_: int):
+    WebSite.delete_instance(WebSite.get_by_id(id_))
     return 'deleted', 200
 
 
-@app.route('/update-web-site/<string:url>', methods={'POST'})
-def update_website(url: str):
-    WebSite.update(url=request.form['url']).where(WebSite.url == url).execute()
+@app.route('/update-web-site/<int:id_>', methods={'POST'})
+def update_website(id_: int):
+    WebSite.update(url=request.form['url']).where(WebSite.id == id_).execute()
     return 'updated', 200
 
 
