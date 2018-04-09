@@ -58,7 +58,7 @@ WebSite.create(url='http://www.put.com')
 def check_status():
     # Cannot fail so it will always be active and will never die, until the server dies (feature).
     while True:
-        time.sleep(5)
+        time.sleep(120)
         try:
             for site in WebSite.select():
                 try:
@@ -83,22 +83,21 @@ def check_status():
                                 break
                         else:
                             mock_api = {
-                                'token': security.API_TOKEN,
+                                'token': conf.API_TOKEN,
                                 'message': web_site.url + ' is broken'
                             }
                             try:
                                 messages = Message.select().order_by(Message.date.desc())
-                                if not messages or (datetime.datetime.now() - messages[0].date).total_seconds() >= 36:
+                                if not messages or (datetime.datetime.now() - messages[0].date).total_seconds() >= 3600:
                                     print(mock_api)
                                     Message.create(web_site=web_site, date=datetime.datetime.now())
                             except BaseException as e:
-                                print(e)
+                                print(e)  # simulate api call
                             # I don't want to create account on Slack and Telegram and you have no right to force me to do this
                 except BaseException as e:
                     print(e)
         except BaseException as e:
             print(e)
-            raise
 
 
 multiprocessing.Process(target=check_status).start()
