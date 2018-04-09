@@ -6,7 +6,7 @@ import time
 import peewee
 import requests
 import multiprocessing
-from flask import Flask, jsonify, abort, request, make_response
+from flask import Flask, jsonify, abort, request, make_response, render_template
 import conf
 
 LOGIN_MESSAGE = 'You must login before. Send post or get with password variable in body at /login. Password is p455w0rd'
@@ -124,7 +124,7 @@ def get_statuses(id_: int):
 
 @app.route('/')
 def list_web_sites():
-    return jsonify({'web_sites': [web_site.url for web_site in WebSite.select()]})
+    return render_template('index.html', **{'web_sites': [web_site.url for web_site in WebSite.select()]})
 
 
 @app.route('/add-web-site', methods={'POST'})
