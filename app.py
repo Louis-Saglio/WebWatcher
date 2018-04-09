@@ -1,14 +1,17 @@
 import datetime
+import hashlib
 import os
 import time
 
 import peewee
 import requests
 import multiprocessing
-from flask import Flask, jsonify, abort, request
+from flask import Flask, jsonify, abort, request, make_response
+import conf
+
+LOGIN_MESSAGE = 'You must login before. Send post or get with password variable in body at /login. Password is p455w0rd'
 
 # Model
-import security
 
 try:
     os.remove('test')
@@ -126,20 +129,39 @@ def list_web_sites():
 
 @app.route('/add-web-site', methods={'POST'})
 def add_web_site():
-    WebSite.create(url=request.form['url'])
-    return 'created', 201
+    if request.cookies.get('admin'):
+        WebSite.create(url=request.form['url'])
+        return 'created', 201
+    else:
+        return LOGIN_MESSAGE
 
 
 @app.route('/remove-web-site/<int:id_>', methods={'GET'})
 def remove_web_site(id_: int):
-    WebSite.delete_instance(WebSite.get_by_id(id_))
-    return 'deleted', 200
+    if request.cookies.get('admin'):
+        WebSite.delete_instance(WebSite.get_by_id(id_))
+        return 'deleted', 200
+    else:
+        return LOGIN_MESSAGE
 
 
 @app.route('/update-web-site/<int:id_>', methods={'POST'})
 def update_website(id_: int):
-    WebSite.update(url=request.form['url']).where(WebSite.id == id_).execute()
-    return 'updated', 200
+    if request.cookies.get('admin'):
+        WebSite.update(url=request.form['url']).where(WebSite.id == id_).execute()
+        return 'updated', 200
+    else:
+        return LOGIN_MESSAGE
+
+
+@app.route('/login', methods={'GET', 'POST'})
+def login():
+    resp = make_response('Failed')
+    password = request.form.get('password', '') if request.method == 'POST' else request.args.get('password', '')
+    if hashlib.sha256(bytes(password, encoding='utf-8')).hexdigest() == conf.PASSWORD:
+        resp = make_response('Authenticated')
+        resp.set_cookie('admin', 'True')
+    return resp
 
 
 if __name__ == '__main__':
