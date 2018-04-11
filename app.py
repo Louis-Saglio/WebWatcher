@@ -6,7 +6,7 @@ import time
 import peewee
 import requests
 import multiprocessing
-from flask import Flask, jsonify, abort, request, make_response, render_template
+from flask import Flask, abort, request, make_response, render_template
 import conf
 
 LOGIN_MESSAGE = 'You must login before. Send post or get with password variable in body at /login. Password is p455w0rd'
@@ -61,7 +61,6 @@ WebSite.create(url='http://www.put.com')
 def check_status():
     # Cannot fail so it will always be active and will never die, until the server dies (feature).
     while True:
-        time.sleep(120)
         try:
             for site in WebSite.select():
                 try:
@@ -119,8 +118,8 @@ def get_statuses(id_: int):
         abort(404)
     rep = {'logs': []}
     for log in web_sites:
-        rep["logs"].append(log.as_dict())
-    return jsonify(rep)
+        rep['logs'].append(log.as_dict())
+    return render_template('get_statuses.html', **rep)
 
 
 @app.route('/')

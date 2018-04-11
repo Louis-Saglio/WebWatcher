@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Status de {{ logs[0].web_site }}
+{% endblock %}
+
+{% block body %}
+    {% for log in logs %}
+        <ul>
+            <li>{{ log['web_site'] }}</li>
+            <li>{{ log['date'] }}</li>
+            <li>{{ log['status'] }}</li>
+        </ul>
+    {% endfor %}
+
+{% endblock %}
