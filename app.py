@@ -101,6 +101,7 @@ def check_status():
                     print(e)
         except BaseException as e:
             print(e)
+        time.sleep(120)
 
 
 multiprocessing.Process(target=check_status).start()
