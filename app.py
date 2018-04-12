@@ -1,15 +1,16 @@
 import datetime
 import hashlib
+import multiprocessing
 import os
 import time
 
 import peewee
 import requests
-import multiprocessing
-from flask import Flask, abort, request, make_response, render_template
+from flask import Flask, abort, request, render_template, redirect, flash
+
 import conf
 
-LOGIN_MESSAGE = 'You must login before. Send post or get with password variable in body at /login. Password is p455w0rd'
+LOGIN_MESSAGE = 'You must login before accessing this url. Send post or get with password variable in body at /login. Password is p455w0rd'
 
 # Model
 
@@ -91,11 +92,11 @@ def check_status():
                             try:
                                 messages = Message.select().order_by(Message.date.desc())
                                 if not messages or (datetime.datetime.now() - messages[0].date).total_seconds() >= 3600:
-                                    print(mock_api)
+                                    print(mock_api)  # simulate api call
+                                    # I don't want to create account on Slack and Telegram and you have no right to force me to do this
                                     Message.create(web_site=web_site, date=datetime.datetime.now())
                             except BaseException as e:
-                                print(e)  # simulate api call
-                            # I don't want to create account on Slack and Telegram and you have no right to force me to do this
+                                print(e)
                 except BaseException as e:
                     print(e)
         except BaseException as e:
@@ -109,6 +110,7 @@ multiprocessing.Process(target=check_status).start()
 # Controller
 
 app = Flask('WebWatcher')  # config
+app.secret_key = 'secret key'
 
 
 @app.route('/web-site/<int:id_>')
@@ -116,51 +118,56 @@ def get_statuses(id_: int):
     web_sites = WebSiteStatusLog.select().join(WebSite).where(WebSite.id == id_)
     if not web_sites:
         abort(404)
-    rep = {'logs': []}
+    logs = []
     for log in web_sites:
-        rep['logs'].append(log.as_dict())
-    return render_template('get_statuses.html', **rep)
+        logs.append(log.as_dict())
+    return render_template('get_statuses.html', logs=logs)
 
 
 @app.route('/')
 def list_web_sites():
-    return render_template('index.html', **{'web_sites': [web_site.url for web_site in WebSite.select()]})
+    return render_template('index.html', web_sites=[web_site.url for web_site in WebSite.select()])
 
 
-@app.route('/add-web-site', methods={'POST'})
+@app.route('/add-web-site', methods={'POST', 'GET'})
 def add_web_site():
     if request.cookies.get('admin'):
         WebSite.create(url=request.form['url'])
-        return 'created', 201
+        flash('Web site with url : {} has been successfully created'.format(request.form['url']))
     else:
-        return LOGIN_MESSAGE
+        flash(LOGIN_MESSAGE)
+    return redirect('/')
 
 
 @app.route('/remove-web-site/<int:id_>', methods={'GET'})
 def remove_web_site(id_: int):
     if request.cookies.get('admin'):
         WebSite.delete_instance(WebSite.get_by_id(id_))
-        return 'deleted', 200
+        flash('Website deleted')
     else:
-        return LOGIN_MESSAGE
+        flash(LOGIN_MESSAGE)
+    return redirect('/')
 
 
 @app.route('/update-web-site/<int:id_>', methods={'POST'})
 def update_website(id_: int):
     if request.cookies.get('admin'):
         WebSite.update(url=request.form['url']).where(WebSite.id == id_).execute()
-        return 'updated', 200
+        flash('Website updated')
     else:
-        return LOGIN_MESSAGE
+        flash(LOGIN_MESSAGE)
+    return redirect('/')
 
 
 @app.route('/login', methods={'GET', 'POST'})
 def login():
-    resp = make_response('Failed')
+    resp = redirect('/')
     password = request.form.get('password', '') if request.method == 'POST' else request.args.get('password', '')
     if hashlib.sha256(bytes(password, encoding='utf-8')).hexdigest() == conf.PASSWORD:
-        resp = make_response('Authenticated')
         resp.set_cookie('admin', 'True')
+        flash('Authenticated')
+    else:
+        flash('Failed')
     return resp
 
 
