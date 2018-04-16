@@ -1,0 +1,18 @@
+# WebWatcher
+Web service to log watch status of web sites
+
+
+Base de donnée SQlite donc pas besoin d'identifiants
+
+Schéma :
+WebSite:
+  url Varchar
+
+WebSiteStatusLog :
+  web_site Integer :
+  date Date
+  status Varchar
+
+Message :
+  web_site Integer
+  date Date
