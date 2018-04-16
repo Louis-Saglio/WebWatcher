@@ -14,11 +14,7 @@ LOGIN_MESSAGE = 'You must login before accessing this url.'
 
 # Model
 
-try:
-    os.remove('test')
-except FileNotFoundError:
-    pass
-db = peewee.SqliteDatabase('test')
+db = peewee.SqliteDatabase('db.sqlite')
 
 
 class WebSite(peewee.Model):
@@ -52,9 +48,7 @@ class Message(peewee.Model):
 
 
 db.create_tables([WebSite, WebSiteStatusLog, Message])
-os.chmod('test', 777)
-
-WebSite.create(url='http://www.put.com')
+os.chmod('db.sqlite', 0o766)
 
 
 # Background script
