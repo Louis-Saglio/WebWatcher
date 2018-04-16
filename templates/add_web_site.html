@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Ajouter un site
+{% endblock %}
+
+{% block body %}
+    <form action="/add-web-site" method="post">
+        <input type="text" name="url" placeholder="url">
+        <input type="submit" value="valider">
+    </form>
+{% endblock %}

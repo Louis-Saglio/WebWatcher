@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+Modifier
+{% endblock %}
+
+{% block body %}
+    <form action="/update-web-site/{{ id }}" method="post">
+        <input type="text" name="url" placeholder="new url">
+        <input type="submit" value="valider">
+    </form>
+{% endblock %}

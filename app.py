@@ -10,7 +10,7 @@ from flask import Flask, abort, request, render_template, redirect, flash
 
 import conf
 
-LOGIN_MESSAGE = 'You must login before accessing this url. Send post or get with password variable in body at /login. Password is p455w0rd'
+LOGIN_MESSAGE = 'You must login before accessing this url.'
 
 # Model
 
@@ -117,7 +117,8 @@ app.secret_key = 'secret key'
 def get_statuses(id_: int):
     web_sites = WebSiteStatusLog.select().join(WebSite).where(WebSite.id == id_)
     if not web_sites:
-        abort(404)
+        flash('Encore aucun log')
+        return redirect('/')
     logs = []
     for log in web_sites:
         logs.append(log.as_dict())
@@ -126,12 +127,14 @@ def get_statuses(id_: int):
 
 @app.route('/')
 def list_web_sites():
-    return render_template('index.html', web_sites=[web_site.url for web_site in WebSite.select()])
+    return render_template('index.html', web_sites=[(web_site.url, web_site.id) for web_site in WebSite.select()])
 
 
 @app.route('/add-web-site', methods={'POST', 'GET'})
 def add_web_site():
-    if request.cookies.get('admin'):
+    if not request.form:
+        return render_template('add_web_site.html')
+    if request.cookies.get('admin') == 'True':
         WebSite.create(url=request.form['url'])
         flash('Web site with url : {} has been successfully created'.format(request.form['url']))
     else:
@@ -149,9 +152,11 @@ def remove_web_site(id_: int):
     return redirect('/')
 
 
-@app.route('/update-web-site/<int:id_>', methods={'POST'})
+@app.route('/update-web-site/<int:id_>', methods={'GET', 'POST'})
 def update_website(id_: int):
-    if request.cookies.get('admin'):
+    if not request.form:
+        return render_template('update.html', id=id_)
+    if request.cookies.get('admin') == 'True':
         WebSite.update(url=request.form['url']).where(WebSite.id == id_).execute()
         flash('Website updated')
     else:
@@ -161,6 +166,8 @@ def update_website(id_: int):
 
 @app.route('/login', methods={'GET', 'POST'})
 def login():
+    if not request.form:
+        return render_template('login.html')
     resp = redirect('/')
     password = request.form.get('password', '') if request.method == 'POST' else request.args.get('password', '')
     if hashlib.sha256(bytes(password, encoding='utf-8')).hexdigest() == conf.PASSWORD:
@@ -168,6 +175,7 @@ def login():
         flash('Authenticated')
     else:
         flash('Failed')
+        resp.set_cookie('admin', 'False')
     return resp
 
 

@@ -5,9 +5,12 @@ Index
 {% endblock %}
 
 {% block body %}
+    <h2>Ajouter un site</h2>
+    <p><a href="/add-web-site">Ajouter un site</a></p>
     <h2>Liste des sites disponibles</h2>
-    {% for url in web_sites %}
-        <p>{{ url }}</p>
+    {% for url, id in web_sites %}
+        <p>{{ url }} <a href="/update-web-site/{{ id }}">Modifier</a> <a href="/remove-web-site/{{ id }}">Supprimer</a>
+            <a href="/web-site/{{ id }}">Voir l'historique</a></p>
     {% endfor %}
 
 {% endblock %}
