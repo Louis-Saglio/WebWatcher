@@ -138,8 +138,8 @@ def add_web_site():
 
 @app.route('/remove-web-site/<int:id_>', methods={'GET'})
 def remove_web_site(id_: int):
-    if request.cookies.get('admin'):
-        WebSite.delete_instance(WebSite.get_by_id(id_))
+    if request.cookies.get('admin') == 'True':
+        WebSite.delete_instance(WebSite.get_by_id(id_), recursive=True)
         flash('Website deleted')
     else:
         flash(LOGIN_MESSAGE)
