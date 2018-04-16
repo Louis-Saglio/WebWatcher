@@ -3,6 +3,7 @@ Web service to log watch status of web sites
 
 
 Base de donnée SQlite donc pas besoin d'identifiants
+Password pour le site : p455w0rd
 
 Schéma :
 WebSite:
